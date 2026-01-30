@@ -1,6 +1,6 @@
-# ThreadForge Frontend
+# FreeForge Frontend
 
-Frontend application for ThreadForge forum platform.
+Frontend application for FreeForge forum platform.
 
 ## GitHub Pages Setup
 
