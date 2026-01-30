@@ -21,13 +21,77 @@ function showAuthModal() {
   modal.innerHTML = `
     <div class="modal-content">
       <span class="modal-close" onclick="this.closest('.modal').remove()">&times;</span>
-      <h2>Login / Register</h2>
+      <h2>Login</h2>
       <div class="auth-form">
-        <input type="text" id="auth-username" placeholder="Username" maxlength="50">
+        <input type="text" id="auth-username" placeholder="Username" maxlength="50" autocomplete="username">
+        <input type="password" id="auth-password" placeholder="Password" maxlength="128" autocomplete="current-password">
         <div class="auth-buttons">
           <button class="btn btn-primary" onclick="handleLogin()">Login</button>
-          <button class="btn btn-secondary" onclick="handleRegister()">Register</button>
+          <button class="btn btn-secondary" onclick="showRegisterModal()">Register</button>
         </div>
+        <div style="margin-top: 15px; text-align: center;">
+          <a href="#" onclick="showPasswordResetModal(); return false;" style="color: #3498db; text-decoration: none; font-size: 14px;">Forgot Password?</a>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+}
+
+// Show registration modal
+function showRegisterModal() {
+  const modal = document.createElement('div');
+  modal.className = 'modal';
+  modal.innerHTML = `
+    <div class="modal-content" style="max-width: 600px;">
+      <span class="modal-close" onclick="this.closest('.modal').remove()">&times;</span>
+      <h2>Register</h2>
+      <div class="form">
+        <label>Username</label>
+        <input type="text" id="register-username" placeholder="Username" maxlength="50" autocomplete="username">
+        <small>Alphanumeric, underscores, and hyphens only</small>
+        
+        <label>Password</label>
+        <input type="password" id="register-password" placeholder="Password (min 8 chars, must include letter and number)" maxlength="128" autocomplete="new-password">
+        <small>Minimum 8 characters, must contain at least one letter and one number</small>
+        
+        <label>Security Question</label>
+        <input type="text" id="register-security-question" placeholder="e.g., What city were you born in?" maxlength="200">
+        <small>Used for password recovery</small>
+        
+        <label>Security Answer</label>
+        <input type="text" id="register-security-answer" placeholder="Your answer" maxlength="200" autocomplete="off">
+        <small>Remember this answer - you'll need it to reset your password</small>
+        
+        <button class="btn btn-primary" onclick="handleRegister()">Register</button>
+        <button class="btn btn-secondary" onclick="showAuthModal(); this.closest('.modal').remove();">Back to Login</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+}
+
+// Show password reset modal
+function showPasswordResetModal() {
+  const modal = document.createElement('div');
+  modal.className = 'modal';
+  modal.innerHTML = `
+    <div class="modal-content" style="max-width: 600px;">
+      <span class="modal-close" onclick="this.closest('.modal').remove()">&times;</span>
+      <h2>Reset Password</h2>
+      <div class="form" id="password-reset-form">
+        <label>Username</label>
+        <input type="text" id="reset-username" placeholder="Enter your username" maxlength="50">
+        <button class="btn btn-primary" onclick="handleGetSecurityQuestion()">Continue</button>
+      </div>
+      <div class="form" id="security-question-form" style="display: none;">
+        <label id="security-question-label">Security Question</label>
+        <input type="text" id="reset-security-answer" placeholder="Your answer" maxlength="200" autocomplete="off">
+        <label style="margin-top: 15px;">New Password</label>
+        <input type="password" id="reset-new-password" placeholder="New password (min 8 chars)" maxlength="128" autocomplete="new-password">
+        <small>Minimum 8 characters, must contain at least one letter and one number</small>
+        <button class="btn btn-primary" onclick="handleResetPassword()">Reset Password</button>
+        <button class="btn btn-secondary" onclick="document.getElementById('password-reset-form').style.display='block'; document.getElementById('security-question-form').style.display='none';">Back</button>
       </div>
     </div>
   `;
@@ -219,15 +283,16 @@ function showEditPostModal(forumSlug, postId, currentContent) {
 // Handle login
 async function handleLogin() {
   const username = document.getElementById('auth-username').value.trim();
+  const password = document.getElementById('auth-password').value;
   
-  if (!username) {
-    showNotification('Please enter a username', 'error');
+  if (!username || !password) {
+    showNotification('Please enter username and password', 'error');
     return;
   }
 
   try {
     showLoading();
-    await login(username);
+    await login(username, password);
     showNotification('Logged in successfully', 'success');
     document.querySelector('.modal').remove();
     router.navigate('/');
@@ -240,10 +305,13 @@ async function handleLogin() {
 
 // Handle register
 async function handleRegister() {
-  const username = document.getElementById('auth-username').value.trim();
+  const username = document.getElementById('register-username').value.trim();
+  const password = document.getElementById('register-password').value;
+  const securityQuestion = document.getElementById('register-security-question').value.trim();
+  const securityAnswer = document.getElementById('register-security-answer').value.trim();
   
-  if (!username) {
-    showNotification('Please enter a username', 'error');
+  if (!username || !password || !securityQuestion || !securityAnswer) {
+    showNotification('Please fill in all fields', 'error');
     return;
   }
 
@@ -252,12 +320,103 @@ async function handleRegister() {
     return;
   }
 
+  if (password.length < 8) {
+    showNotification('Password must be at least 8 characters long', 'error');
+    return;
+  }
+
+  if (!/[a-zA-Z]/.test(password) || !/[0-9]/.test(password)) {
+    showNotification('Password must contain at least one letter and one number', 'error');
+    return;
+  }
+
   try {
     showLoading();
-    await register(username);
+    await register(username, password, securityQuestion, securityAnswer);
     showNotification('Registered successfully', 'success');
     document.querySelector('.modal').remove();
     router.navigate('/');
+  } catch (error) {
+    showNotification(error.message, 'error');
+  } finally {
+    hideLoading();
+  }
+}
+
+// Handle get security question
+async function handleGetSecurityQuestion() {
+  const username = document.getElementById('reset-username').value.trim();
+  
+  if (!username) {
+    showNotification('Please enter your username', 'error');
+    return;
+  }
+
+  try {
+    showLoading();
+    const response = await fetch(`${CONFIG.API_URL}/api/auth/security-question`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ username })
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to retrieve security question');
+    }
+
+    const data = await response.json();
+    document.getElementById('security-question-label').textContent = data.securityQuestion;
+    document.getElementById('password-reset-form').style.display = 'none';
+    document.getElementById('security-question-form').style.display = 'block';
+    hideLoading();
+  } catch (error) {
+    showNotification(error.message, 'error');
+    hideLoading();
+  }
+}
+
+// Handle reset password
+async function handleResetPassword() {
+  const username = document.getElementById('reset-username').value.trim();
+  const securityAnswer = document.getElementById('reset-security-answer').value.trim();
+  const newPassword = document.getElementById('reset-new-password').value;
+
+  if (!username || !securityAnswer || !newPassword) {
+    showNotification('Please fill in all fields', 'error');
+    return;
+  }
+
+  if (newPassword.length < 8) {
+    showNotification('Password must be at least 8 characters long', 'error');
+    return;
+  }
+
+  if (!/[a-zA-Z]/.test(newPassword) || !/[0-9]/.test(newPassword)) {
+    showNotification('Password must contain at least one letter and one number', 'error');
+    return;
+  }
+
+  try {
+    showLoading();
+    const response = await fetch(`${CONFIG.API_URL}/api/auth/reset-password`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ username, securityAnswer, newPassword })
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to reset password');
+    }
+
+    showNotification('Password reset successfully! You can now login.', 'success');
+    document.querySelector('.modal').remove();
+    showAuthModal();
   } catch (error) {
     showNotification(error.message, 'error');
   } finally {

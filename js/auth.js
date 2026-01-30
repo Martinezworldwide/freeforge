@@ -45,14 +45,14 @@ function getAuthHeaders() {
 }
 
 // Register new user
-async function register(username) {
+async function register(username, password, securityQuestion, securityAnswer) {
   try {
     const response = await fetch(`${CONFIG.API_URL}/api/auth/register`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ username })
+      body: JSON.stringify({ username, password, securityQuestion, securityAnswer })
     });
 
     if (!response.ok) {
@@ -71,14 +71,14 @@ async function register(username) {
 }
 
 // Login user
-async function login(username) {
+async function login(username, password) {
   try {
     const response = await fetch(`${CONFIG.API_URL}/api/auth/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ username })
+      body: JSON.stringify({ username, password })
     });
 
     if (!response.ok) {
