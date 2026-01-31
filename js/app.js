@@ -433,7 +433,8 @@ async function handleUpdateForumCustomization(forumSlug) {
   const welcomeMessage = document.getElementById('customize-welcomeMessage')?.value.trim() || '';
   const homepageLayout = document.getElementById('customize-homepageLayout')?.value || '1-column';
   const boardLimitInput = document.getElementById('customize-boardLimit');
-  const boardLimit = boardLimitInput && boardLimitInput.value ? parseInt(boardLimitInput.value) : null;
+  // Convert empty string to null, otherwise parse as integer
+  const boardLimit = boardLimitInput && boardLimitInput.value.trim() ? parseInt(boardLimitInput.value.trim()) : null;
 
   try {
     showLoading();
