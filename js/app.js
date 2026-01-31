@@ -129,17 +129,42 @@ function showCreateForumModal() {
         </select>
         
         <details>
-          <summary style="cursor: pointer; margin-top: 15px; font-weight: 500;">Advanced Customization (Optional)</summary>
+          <summary style="cursor: pointer; margin-top: 15px; font-weight: 500;">Visual Customization (Optional)</summary>
+          <div style="margin-top: 10px;">
+            <label>Header/Banner Image URL</label>
+            <input type="url" id="forum-headerImageUrl" placeholder="https://i.pinimg.com/..." maxlength="500">
+            <small>Banner image for the top of your forum</small>
+            
+            <label style="margin-top: 15px;">Logo Image URL</label>
+            <input type="url" id="forum-logoImageUrl" placeholder="https://i.pinimg.com/..." maxlength="500">
+            <small>Logo image for your forum</small>
+            
+            <label style="margin-top: 15px;">Custom Bullet Point Image URL</label>
+            <input type="url" id="forum-bulletImageUrl" placeholder="https://i.pinimg.com/..." maxlength="500">
+            <small>Image URL for custom bullet points</small>
+            
+            <label style="margin-top: 15px;">Homepage Layout</label>
+            <select id="forum-homepageLayout">
+              <option value="1-column">1 Column (Default)</option>
+              <option value="2-column">2 Columns</option>
+              <option value="3-column">3 Columns</option>
+            </select>
+            <small>Choose how many columns for homepage content</small>
+          </div>
+        </details>
+        
+        <details>
+          <summary style="cursor: pointer; margin-top: 15px; font-weight: 500;">Advanced CSS (Optional)</summary>
           <div style="margin-top: 10px;">
             <label>Custom CSS (InvisionFree-style skins)</label>
             <textarea id="forum-customCSS" rows="8" placeholder="/* Paste your custom CSS here */&#10;.forum-card { background: #f0f0f0; }" maxlength="50000"></textarea>
             <small>Add custom CSS to style your forum. Max 50,000 characters.</small>
-            
-            <label style="margin-top: 15px;">Custom Bullet Point Image URL</label>
-            <input type="url" id="forum-bulletImageUrl" placeholder="https://i.pinimg.com/..." maxlength="500">
-            <small>Paste a Pinterest image URL (or any image URL) to use as bullet points. Leave empty for default.</small>
           </div>
         </details>
+        
+        <label style="margin-top: 15px;">Welcome Message (Optional)</label>
+        <textarea id="forum-welcomeMessage" rows="3" placeholder="Welcome to our forum!" maxlength="1000"></textarea>
+        <small>Custom welcome message displayed on homepage</small>
         
         <button class="btn btn-primary" onclick="handleCreateForum()">Create Forum</button>
       </div>
@@ -213,45 +238,347 @@ function showCustomizeForumModal(forumSlug) {
     const modal = document.createElement('div');
     modal.className = 'modal';
     modal.innerHTML = `
-      <div class="modal-content" style="max-width: 700px;">
+      <div class="modal-content" style="max-width: 800px; max-height: 90vh; overflow-y: auto;">
         <span class="modal-close" onclick="this.closest('.modal').remove()">&times;</span>
         <h2>Customize Forum</h2>
-        <div class="form">
-          <label>Custom CSS (InvisionFree-style skins)</label>
-          <textarea id="customize-customCSS" rows="12" placeholder="/* Paste your custom CSS here */" maxlength="50000">${(forum.customCSS || '').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</textarea>
-          <small>Add custom CSS to style your forum. Max 50,000 characters.</small>
-          
-          <label style="margin-top: 15px;">Custom Bullet Point Image URL</label>
-          <input type="url" id="customize-bulletImageUrl" placeholder="https://i.pinimg.com/..." value="${(forum.bulletImageUrl || '').replace(/"/g, '&quot;')}" maxlength="500">
-          <small>Paste a Pinterest image URL (or any image URL) to use as bullet points. Leave empty for default.</small>
-          
-          <div style="margin-top: 20px;">
-            <button class="btn btn-primary" onclick="handleUpdateForumCustomization('${forumSlug}')">Save Customization</button>
-            <button class="btn btn-secondary" onclick="this.closest('.modal').remove()">Cancel</button>
-          </div>
+        
+        <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+          <button class="btn btn-secondary" onclick="showCustomizeTab('${forumSlug}', 'visual')">Visual</button>
+          <button class="btn btn-secondary" onclick="showCustomizeTab('${forumSlug}', 'content')">Content</button>
+          <button class="btn btn-secondary" onclick="showCustomizeTab('${forumSlug}', 'css')">CSS</button>
+          <button class="btn btn-secondary" onclick="showCustomizeTab('${forumSlug}', 'settings')">Settings</button>
+        </div>
+        
+        <div id="customize-tab-content">
+          <!-- Tab content will be loaded here -->
         </div>
       </div>
     `;
     document.body.appendChild(modal);
+    
+    // Load default tab
+    showCustomizeTab(forumSlug, 'visual', forum);
   }).catch(error => {
     showNotification('Error loading forum: ' + error.message, 'error');
   });
 }
 
+// Show customize tab
+function showCustomizeTab(forumSlug, tab, forumData) {
+  if (!forumData) {
+    getForum(forumSlug).then(forum => {
+      renderCustomizeTab(forumSlug, tab, forum);
+    });
+  } else {
+    renderCustomizeTab(forumSlug, tab, forumData);
+  }
+}
+
+// Render customize tab content
+function renderCustomizeTab(forumSlug, tab, forum) {
+  const contentDiv = document.getElementById('customize-tab-content');
+  
+  if (tab === 'visual') {
+    contentDiv.innerHTML = `
+      <div class="form">
+        <label>Header/Banner Image URL</label>
+        <input type="url" id="customize-headerImageUrl" placeholder="https://i.pinimg.com/..." value="${(forum.headerImageUrl || '').replace(/"/g, '&quot;')}" maxlength="500">
+        <small>Banner image for the top of your forum</small>
+        
+        <label style="margin-top: 15px;">Logo Image URL</label>
+        <input type="url" id="customize-logoImageUrl" placeholder="https://i.pinimg.com/..." value="${(forum.logoImageUrl || '').replace(/"/g, '&quot;')}" maxlength="500">
+        <small>Logo image for your forum</small>
+        
+        <label style="margin-top: 15px;">Custom Bullet Point Image URL</label>
+        <input type="url" id="customize-bulletImageUrl" placeholder="https://i.pinimg.com/..." value="${(forum.bulletImageUrl || '').replace(/"/g, '&quot;')}" maxlength="500">
+        <small>Image URL for custom bullet points</small>
+        
+        <label style="margin-top: 15px;">Homepage Layout</label>
+        <select id="customize-homepageLayout">
+          <option value="1-column" ${forum.homepageLayout === '1-column' ? 'selected' : ''}>1 Column</option>
+          <option value="2-column" ${forum.homepageLayout === '2-column' ? 'selected' : ''}>2 Columns</option>
+          <option value="3-column" ${forum.homepageLayout === '3-column' ? 'selected' : ''}>3 Columns</option>
+        </select>
+        <small>Choose how many columns for homepage content</small>
+        
+        <div style="margin-top: 20px;">
+          <button class="btn btn-primary" onclick="handleUpdateForumCustomization('${forumSlug}')">Save Changes</button>
+        </div>
+      </div>
+    `;
+  } else if (tab === 'content') {
+    const announcements = forum.announcements || [];
+    const quickRefs = forum.quickReferences || [];
+    
+    contentDiv.innerHTML = `
+      <div class="form">
+        <label>Welcome Message</label>
+        <textarea id="customize-welcomeMessage" rows="3" placeholder="Welcome to our forum!" maxlength="1000">${(forum.welcomeMessage || '').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</textarea>
+        <small>Custom welcome message displayed on homepage</small>
+        
+        <h3 style="margin-top: 30px; margin-bottom: 15px;">Announcements</h3>
+        <div id="announcements-list">
+          ${announcements.map(a => `
+            <div style="border: 1px solid #ddd; padding: 15px; margin-bottom: 10px; border-radius: 5px;">
+              <strong>${escapeHtml(a.title)}</strong>
+              <p style="margin: 5px 0; color: #666;">${escapeHtml(a.content.substring(0, 100))}${a.content.length > 100 ? '...' : ''}</p>
+              <button class="btn btn-small btn-danger" onclick="handleDeleteAnnouncement('${forumSlug}', '${a.id}')">Delete</button>
+            </div>
+          `).join('')}
+          ${announcements.length === 0 ? '<p style="color: #999;">No announcements yet</p>' : ''}
+        </div>
+        <button class="btn btn-secondary" onclick="showAddAnnouncementModal('${forumSlug}')" style="margin-top: 10px;">Add Announcement</button>
+        
+        <h3 style="margin-top: 30px; margin-bottom: 15px;">Quick References</h3>
+        <div id="quick-refs-list">
+          ${quickRefs.map(r => `
+            <div style="border: 1px solid #ddd; padding: 15px; margin-bottom: 10px; border-radius: 5px;">
+              <strong>${escapeHtml(r.label)}</strong> - <a href="${escapeHtml(r.url)}" target="_blank">${escapeHtml(r.url)}</a>
+              <button class="btn btn-small btn-danger" onclick="handleDeleteQuickReference('${forumSlug}', '${r.id}')" style="margin-left: 10px;">Delete</button>
+            </div>
+          `).join('')}
+          ${quickRefs.length === 0 ? '<p style="color: #999;">No quick references yet</p>' : ''}
+        </div>
+        <button class="btn btn-secondary" onclick="showAddQuickReferenceModal('${forumSlug}')" style="margin-top: 10px;">Add Quick Reference</button>
+        
+        <div style="margin-top: 20px;">
+          <button class="btn btn-primary" onclick="handleUpdateForumCustomization('${forumSlug}')">Save Changes</button>
+        </div>
+      </div>
+    `;
+  } else if (tab === 'css') {
+    contentDiv.innerHTML = `
+      <div class="form">
+        <label>Custom CSS (InvisionFree-style skins)</label>
+        <textarea id="customize-customCSS" rows="15" placeholder="/* Paste your custom CSS here */" maxlength="50000">${(forum.customCSS || '').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</textarea>
+        <small>Add custom CSS to style your forum. Max 50,000 characters.</small>
+        
+        <div style="margin-top: 20px;">
+          <button class="btn btn-primary" onclick="handleUpdateForumCustomization('${forumSlug}')">Save CSS</button>
+        </div>
+      </div>
+    `;
+  } else if (tab === 'settings') {
+    contentDiv.innerHTML = `
+      <div class="form">
+        <label>Board Limit</label>
+        <input type="number" id="customize-boardLimit" placeholder="Leave empty for unlimited" value="${forum.boardLimit || ''}" min="1">
+        <small>Maximum number of boards. Leave empty for unlimited.</small>
+        
+        <div style="margin-top: 20px;">
+          <button class="btn btn-primary" onclick="handleUpdateForumCustomization('${forumSlug}')">Save Settings</button>
+        </div>
+      </div>
+    `;
+  }
+}
+
+// Show add announcement modal
+function showAddAnnouncementModal(forumSlug) {
+  const modal = document.createElement('div');
+  modal.className = 'modal';
+  modal.innerHTML = `
+    <div class="modal-content">
+      <span class="modal-close" onclick="this.closest('.modal').remove()">&times;</span>
+      <h2>Add Announcement</h2>
+      <div class="form">
+        <label>Title</label>
+        <input type="text" id="announcement-title" placeholder="Announcement title" maxlength="200">
+        
+        <label>Content</label>
+        <textarea id="announcement-content" rows="6" placeholder="Announcement content..." maxlength="5000"></textarea>
+        
+        <label>Priority</label>
+        <select id="announcement-priority">
+          <option value="normal">Normal</option>
+          <option value="high">High</option>
+          <option value="urgent">Urgent</option>
+        </select>
+        
+        <button class="btn btn-primary" onclick="handleAddAnnouncement('${forumSlug}')">Add Announcement</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+}
+
+// Show add quick reference modal
+function showAddQuickReferenceModal(forumSlug) {
+  const modal = document.createElement('div');
+  modal.className = 'modal';
+  modal.innerHTML = `
+    <div class="modal-content">
+      <span class="modal-close" onclick="this.closest('.modal').remove()">&times;</span>
+      <h2>Add Quick Reference</h2>
+      <div class="form">
+        <label>Label</label>
+        <input type="text" id="quickref-label" placeholder="Link label" maxlength="100">
+        
+        <label>URL</label>
+        <input type="url" id="quickref-url" placeholder="https://..." maxlength="500">
+        
+        <button class="btn btn-primary" onclick="handleAddQuickReference('${forumSlug}')">Add Reference</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+}
+
 // Handle update forum customization
 async function handleUpdateForumCustomization(forumSlug) {
-  const customCSS = document.getElementById('customize-customCSS').value.trim();
-  const bulletImageUrl = document.getElementById('customize-bulletImageUrl').value.trim();
+  const customCSS = document.getElementById('customize-customCSS')?.value.trim() || '';
+  const bulletImageUrl = document.getElementById('customize-bulletImageUrl')?.value.trim() || '';
+  const headerImageUrl = document.getElementById('customize-headerImageUrl')?.value.trim() || '';
+  const logoImageUrl = document.getElementById('customize-logoImageUrl')?.value.trim() || '';
+  const welcomeMessage = document.getElementById('customize-welcomeMessage')?.value.trim() || '';
+  const homepageLayout = document.getElementById('customize-homepageLayout')?.value || '1-column';
+  const boardLimitInput = document.getElementById('customize-boardLimit');
+  const boardLimit = boardLimitInput && boardLimitInput.value ? parseInt(boardLimitInput.value) : null;
 
   try {
     showLoading();
-    await updateForumCustomization(forumSlug, { customCSS, bulletImageUrl });
+    await updateForumCustomization(forumSlug, { 
+      customCSS, bulletImageUrl, headerImageUrl, logoImageUrl,
+      welcomeMessage, homepageLayout, boardLimit
+    });
     showNotification('Forum customization updated successfully!', 'success');
-    document.querySelector('.modal').remove();
-    // Refresh the forum view
+    // Refresh the customization modal
     setTimeout(() => {
-      router.navigate(`/forum/${forumSlug}`);
-    }, 1000);
+      showCustomizeForumModal(forumSlug);
+    }, 500);
+  } catch (error) {
+    showNotification(error.message, 'error');
+  } finally {
+    hideLoading();
+  }
+}
+
+// Handle add announcement
+async function handleAddAnnouncement(forumSlug) {
+  const title = document.getElementById('announcement-title').value.trim();
+  const content = document.getElementById('announcement-content').value.trim();
+  const priority = document.getElementById('announcement-priority').value;
+
+  if (!title || !content) {
+    showNotification('Please fill in all fields', 'error');
+    return;
+  }
+
+  try {
+    showLoading();
+    const response = await fetch(`${CONFIG.API_URL}/api/forums/${forumSlug}/announcements`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ title, content, priority })
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to create announcement');
+    }
+
+    showNotification('Announcement added successfully!', 'success');
+    document.querySelector('.modal').remove();
+    // Refresh customization modal
+    setTimeout(() => {
+      showCustomizeForumModal(forumSlug);
+    }, 500);
+  } catch (error) {
+    showNotification(error.message, 'error');
+  } finally {
+    hideLoading();
+  }
+}
+
+// Handle delete announcement
+async function handleDeleteAnnouncement(forumSlug, announcementId) {
+  if (!confirm('Are you sure you want to delete this announcement?')) {
+    return;
+  }
+
+  try {
+    showLoading();
+    const response = await fetch(`${CONFIG.API_URL}/api/forums/${forumSlug}/announcements/${announcementId}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders()
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to delete announcement');
+    }
+
+    showNotification('Announcement deleted successfully!', 'success');
+    // Refresh customization modal
+    setTimeout(() => {
+      showCustomizeForumModal(forumSlug);
+    }, 500);
+  } catch (error) {
+    showNotification(error.message, 'error');
+  } finally {
+    hideLoading();
+  }
+}
+
+// Handle add quick reference
+async function handleAddQuickReference(forumSlug) {
+  const label = document.getElementById('quickref-label').value.trim();
+  const url = document.getElementById('quickref-url').value.trim();
+
+  if (!label || !url) {
+    showNotification('Please fill in all fields', 'error');
+    return;
+  }
+
+  try {
+    showLoading();
+    const response = await fetch(`${CONFIG.API_URL}/api/forums/${forumSlug}/quick-references`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ label, url })
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to create quick reference');
+    }
+
+    showNotification('Quick reference added successfully!', 'success');
+    document.querySelector('.modal').remove();
+    // Refresh customization modal
+    setTimeout(() => {
+      showCustomizeForumModal(forumSlug);
+    }, 500);
+  } catch (error) {
+    showNotification(error.message, 'error');
+  } finally {
+    hideLoading();
+  }
+}
+
+// Handle delete quick reference
+async function handleDeleteQuickReference(forumSlug, referenceId) {
+  if (!confirm('Are you sure you want to delete this quick reference?')) {
+    return;
+  }
+
+  try {
+    showLoading();
+    const response = await fetch(`${CONFIG.API_URL}/api/forums/${forumSlug}/quick-references/${referenceId}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders()
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to delete quick reference');
+    }
+
+    showNotification('Quick reference deleted successfully!', 'success');
+    // Refresh customization modal
+    setTimeout(() => {
+      showCustomizeForumModal(forumSlug);
+    }, 500);
   } catch (error) {
     showNotification(error.message, 'error');
   } finally {
@@ -432,6 +759,10 @@ async function handleCreateForum() {
   const visibility = document.getElementById('forum-visibility').value;
   const customCSS = document.getElementById('forum-customCSS')?.value.trim() || '';
   const bulletImageUrl = document.getElementById('forum-bulletImageUrl')?.value.trim() || '';
+  const headerImageUrl = document.getElementById('forum-headerImageUrl')?.value.trim() || '';
+  const logoImageUrl = document.getElementById('forum-logoImageUrl')?.value.trim() || '';
+  const welcomeMessage = document.getElementById('forum-welcomeMessage')?.value.trim() || '';
+  const homepageLayout = document.getElementById('forum-homepageLayout')?.value || '1-column';
 
   if (!name || !slug) {
     showNotification('Please fill in all required fields', 'error');
@@ -445,7 +776,10 @@ async function handleCreateForum() {
 
   try {
     showLoading();
-    const result = await createForum({ name, slug, rules, visibility, customCSS, bulletImageUrl });
+    const result = await createForum({ 
+      name, slug, rules, visibility, customCSS, bulletImageUrl,
+      headerImageUrl, logoImageUrl, welcomeMessage, homepageLayout
+    });
     console.log('Forum creation result:', result); // Debug log
     showNotification('Forum created successfully! Refreshing in 10 seconds...', 'success');
     document.querySelector('.modal').remove();

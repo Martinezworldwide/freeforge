@@ -66,6 +66,26 @@ async function updateForumCustomization(forumSlug, data) {
   return apiRequest(`/api/forums/${forumSlug}/customize`, 'PUT', data);
 }
 
+// Create announcement
+async function createAnnouncement(forumSlug, data) {
+  return apiRequest(`/api/forums/${forumSlug}/announcements`, 'POST', data);
+}
+
+// Delete announcement
+async function deleteAnnouncement(forumSlug, announcementId) {
+  return apiRequest(`/api/forums/${forumSlug}/announcements/${announcementId}`, 'DELETE');
+}
+
+// Create quick reference
+async function createQuickReference(forumSlug, data) {
+  return apiRequest(`/api/forums/${forumSlug}/quick-references`, 'POST', data);
+}
+
+// Delete quick reference
+async function deleteQuickReference(forumSlug, referenceId) {
+  return apiRequest(`/api/forums/${forumSlug}/quick-references/${referenceId}`, 'DELETE');
+}
+
 // Create board
 async function createBoard(forumSlug, data) {
   return apiRequest(`/api/forums/${forumSlug}/boards`, 'POST', data);
