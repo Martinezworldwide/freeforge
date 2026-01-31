@@ -113,11 +113,56 @@ async function deletePost(forumSlug, postId) {
 
 // Data fetching methods (read-through backend for private repo)
 
+// Simple in-memory cache for read operations
+const readCache = {
+  forumsIndex: { data: null, timestamp: 0, ttl: 30000 }, // 30 seconds
+  forums: {}, // slug -> { data, timestamp, ttl: 60000 } // 1 minute
+  boards: {}, // slug -> { data, timestamp, ttl: 60000 }
+  threads: {}, // slug -> { data, timestamp, ttl: 30000 }
+  posts: {}, // slug -> { data, timestamp, ttl: 30000 }
+  users: { data: null, timestamp: 0, ttl: 120000 } // 2 minutes
+};
+
+// Retry helper with exponential backoff
+async function retryFetch(url, options = {}, maxRetries = 3) {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      const response = await fetch(url, options);
+      if (response.ok || response.status !== 429) {
+        return response;
+      }
+      
+      // If 429, wait before retrying
+      if (response.status === 429) {
+        const retryAfter = response.headers.get('Retry-After');
+        const waitTime = retryAfter ? parseInt(retryAfter) * 1000 : Math.pow(2, i) * 1000; // Exponential backoff
+        console.warn(`Rate limited (429), waiting ${waitTime}ms before retry ${i + 1}/${maxRetries}`);
+        await new Promise(resolve => setTimeout(resolve, waitTime));
+        continue;
+      }
+      
+      return response;
+    } catch (error) {
+      if (i === maxRetries - 1) throw error;
+      await new Promise(resolve => setTimeout(resolve, Math.pow(2, i) * 1000));
+    }
+  }
+  throw new Error('Max retries exceeded');
+}
+
 // Get forums index
 async function getForumsIndex() {
   try {
+    // Check cache first
+    const cache = readCache.forumsIndex;
+    const now = Date.now();
+    if (cache.data && (now - cache.timestamp) < cache.ttl) {
+      console.log('Using cached forums index');
+      return cache.data;
+    }
+
     console.log('Fetching forums index from:', `${CONFIG.API_URL}/api/data/forums/index.json`);
-    const response = await fetch(`${CONFIG.API_URL}/api/data/forums/index.json`, {
+    const response = await retryFetch(`${CONFIG.API_URL}/api/data/forums/index.json`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json'
@@ -132,6 +177,10 @@ async function getForumsIndex() {
     
     const data = await response.json();
     console.log('Forums index from backend:', data);
+    
+    // Update cache
+    readCache.forumsIndex = { data, timestamp: Date.now(), ttl: cache.ttl };
+    
     return data;
   } catch (error) {
     console.error('Error fetching forums index:', error);
