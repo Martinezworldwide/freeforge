@@ -74,9 +74,12 @@ async function renderForum(params) {
   showLoading();
 
   try {
-    const [forum, boards] = await Promise.all([
+    const [forum, boards, threads, posts, users] = await Promise.all([
       getForum(slug),
-      getBoards(slug)
+      getBoards(slug),
+      getThreads(slug).catch(() => ({})),
+      getPosts(slug).catch(() => ({})),
+      getUsers().catch(() => ({}))
     ]);
 
     if (!forum) {
@@ -95,7 +98,7 @@ async function renderForum(params) {
     const boardsList = Object.values(boards || {});
     const announcements = forum.announcements || [];
     const quickRefs = forum.quickReferences || [];
-    const layout = forum.homepageLayout || '1-column';
+    const layout = forum.homepageLayout || '3-column'; // Default to 3-column
 
     // Apply custom CSS if provided
     if (forum.customCSS) {
@@ -183,118 +186,75 @@ async function renderForum(params) {
       `;
     }
 
-    // Build boards section based on layout
-    let boardsHtml = '';
-    if (layout === '3-column') {
-      // Split boards into 3 columns
-      const boardsPerCol = Math.ceil(boardsList.length / 3);
-      const col1 = boardsList.slice(0, boardsPerCol);
-      const col2 = boardsList.slice(boardsPerCol, boardsPerCol * 2);
-      const col3 = boardsList.slice(boardsPerCol * 2);
-      
-      boardsHtml = `
-        <div class="boards-section" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
-          <div>
-            ${col1.map(board => `
-              <div class="board-card" onclick="router.navigate('/forum/${slug}/board/${board.id}')">
-                <h3>${escapeHtml(board.name)}</h3>
-                ${board.description ? `<p>${escapeHtml(board.description)}</p>` : ''}
-                <div class="board-stats">
-                  <span>${board.threadCount || 0} threads</span>
-                  <span>${board.postCount || 0} posts</span>
-                </div>
-              </div>
-            `).join('')}
-          </div>
-          <div>
-            ${col2.map(board => `
-              <div class="board-card" onclick="router.navigate('/forum/${slug}/board/${board.id}')">
-                <h3>${escapeHtml(board.name)}</h3>
-                ${board.description ? `<p>${escapeHtml(board.description)}</p>` : ''}
-                <div class="board-stats">
-                  <span>${board.threadCount || 0} threads</span>
-                  <span>${board.postCount || 0} posts</span>
-                </div>
-              </div>
-            `).join('')}
-          </div>
-          <div>
-            ${col3.map(board => `
-              <div class="board-card" onclick="router.navigate('/forum/${slug}/board/${board.id}')">
-                <h3>${escapeHtml(board.name)}</h3>
-                ${board.description ? `<p>${escapeHtml(board.description)}</p>` : ''}
-                <div class="board-stats">
-                  <span>${board.threadCount || 0} threads</span>
-                  <span>${board.postCount || 0} posts</span>
-                </div>
-              </div>
-            `).join('')}
-          </div>
+    // Build boards section - vBulletin-style directory table
+    const isOwner = isAuthenticated() && forum.ownerId === getUser()?.id;
+    
+    boardsHtml = `
+      <div class="boards-section" style="background: white; border-radius: 5px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; background: #f8f9fa; border-bottom: 1px solid #dee2e6;">
+          <h2 style="margin: 0; color: #2c3e50;">Directory</h2>
+          ${isOwner ? `
+            <button class="btn btn-primary" onclick="showCreateBoardModal('${slug}')">Create Board</button>
+          ` : ''}
         </div>
-      `;
-    } else if (layout === '2-column') {
-      // Split boards into 2 columns
-      const boardsPerCol = Math.ceil(boardsList.length / 2);
-      const col1 = boardsList.slice(0, boardsPerCol);
-      const col2 = boardsList.slice(boardsPerCol);
-      
-      boardsHtml = `
-        <div class="boards-section" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;">
-          <div>
-            ${col1.map(board => `
-              <div class="board-card" onclick="router.navigate('/forum/${slug}/board/${board.id}')">
-                <h3>${escapeHtml(board.name)}</h3>
-                ${board.description ? `<p>${escapeHtml(board.description)}</p>` : ''}
-                <div class="board-stats">
-                  <span>${board.threadCount || 0} threads</span>
-                  <span>${board.postCount || 0} posts</span>
-                </div>
-              </div>
-            `).join('')}
+        
+        ${boardsList.length === 0 ? `
+          <div class="empty-state" style="padding: 40px; text-align: center; color: #6c757d;">
+            <p>No boards yet.</p>
+            ${isOwner ? `
+              <button class="btn btn-primary" onclick="showCreateBoardModal('${slug}')" style="margin-top: 15px;">Create Board</button>
+            ` : ''}
           </div>
-          <div>
-            ${col2.map(board => `
-              <div class="board-card" onclick="router.navigate('/forum/${slug}/board/${board.id}')">
-                <h3>${escapeHtml(board.name)}</h3>
-                ${board.description ? `<p>${escapeHtml(board.description)}</p>` : ''}
-                <div class="board-stats">
-                  <span>${board.threadCount || 0} threads</span>
-                  <span>${board.postCount || 0} posts</span>
-                </div>
-              </div>
-            `).join('')}
-          </div>
-        </div>
-      `;
-    } else {
-      // 1-column layout (default)
-      boardsHtml = `
-        <div class="boards-section">
-          <h2>Boards</h2>
-          ${boardsList.length === 0 ? `
-            <div class="empty-state">
-              <p>No boards yet.</p>
-              ${isAuthenticated() && forum.ownerId === getUser()?.id ? `
-                <button class="btn btn-primary" onclick="showCreateBoardModal('${slug}')">Create Board</button>
-              ` : ''}
-            </div>
-          ` : `
-            <div class="boards-list">
-              ${boardsList.map(board => `
-                <div class="board-card" onclick="router.navigate('/forum/${slug}/board/${board.id}')">
-                  <h3>${escapeHtml(board.name)}</h3>
-                  ${board.description ? `<p>${escapeHtml(board.description)}</p>` : ''}
-                  <div class="board-stats">
-                    <span>${board.threadCount || 0} threads</span>
-                    <span>${board.postCount || 0} posts</span>
-                  </div>
-                </div>
-              `).join('')}
-            </div>
-          `}
-        </div>
-      `;
-    }
+        ` : `
+          <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+              <tr style="background: #f8f9fa; border-bottom: 2px solid #dee2e6;">
+                <th style="padding: 12px 20px; text-align: left; font-weight: 600; color: #495057;">Forum</th>
+                <th style="padding: 12px 20px; text-align: center; font-weight: 600; color: #495057; width: 100px;">Topics</th>
+                <th style="padding: 12px 20px; text-align: center; font-weight: 600; color: #495057; width: 100px;">Posts</th>
+                <th style="padding: 12px 20px; text-align: left; font-weight: 600; color: #495057;">Last Post</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${boardsList.map((board, index) => {
+                const lastThread = board.lastThreadId ? (threads[board.lastThreadId] || null) : null;
+                const lastPost = lastThread && lastThread.lastPostId ? (posts[lastThread.lastPostId] || null) : null;
+                const lastPostAuthor = lastPost ? (users[lastPost.authorId] || { username: 'Unknown' }) : null;
+                
+                return `
+                  <tr style="border-bottom: 1px solid #dee2e6; cursor: pointer;" onclick="router.navigate('/forum/${slug}/board/${board.id}')" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='white'">
+                    <td style="padding: 15px 20px;">
+                      <div style="display: flex; align-items: center; gap: 12px;">
+                        <div style="width: 40px; height: 40px; background: #3498db; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; flex-shrink: 0;">
+                          💬
+                        </div>
+                        <div>
+                          <h3 style="margin: 0 0 5px 0; color: #3498db; font-size: 16px; font-weight: 600;">${escapeHtml(board.name)}</h3>
+                          ${board.description ? `<p style="margin: 0; color: #6c757d; font-size: 14px;">${escapeHtml(board.description)}</p>` : ''}
+                        </div>
+                      </div>
+                    </td>
+                    <td style="padding: 15px 20px; text-align: center; color: #495057;">${board.threadCount || 0}</td>
+                    <td style="padding: 15px 20px; text-align: center; color: #495057;">${board.postCount || 0}</td>
+                    <td style="padding: 15px 20px; color: #6c757d; font-size: 14px;">
+                      ${lastPost ? `
+                        <div>
+                          <div style="font-weight: 500; color: #2c3e50;">${escapeHtml(lastThread?.title || 'Untitled')}</div>
+                          <div style="margin-top: 4px;">
+                            by <span style="color: #3498db;">${escapeHtml(lastPostAuthor?.username || 'Unknown')}</span>
+                            <span style="color: #adb5bd;">• ${formatDate(lastPost.createdAt)}</span>
+                          </div>
+                        </div>
+                      ` : '<span style="color: #adb5bd;">No posts yet</span>'}
+                    </td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+        `}
+      </div>
+    `;
 
     app.innerHTML = bulletStyle + `
       <div class="container forum-${slug}">

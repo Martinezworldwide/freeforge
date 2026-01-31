@@ -143,13 +143,13 @@ function showCreateForumModal() {
             <input type="url" id="forum-bulletImageUrl" placeholder="https://i.pinimg.com/..." maxlength="500">
             <small>Use direct image URLs. For Pinterest: Right-click image → "Copy image address"</small>
             
-            <label style="margin-top: 15px;">Homepage Layout</label>
-            <select id="forum-homepageLayout">
-              <option value="1-column">1 Column (Default)</option>
-              <option value="2-column">2 Columns</option>
-              <option value="3-column">3 Columns</option>
-            </select>
-            <small>Choose how many columns for homepage content</small>
+        <label style="margin-top: 15px;">Homepage Layout</label>
+        <select id="forum-homepageLayout">
+          <option value="3-column" selected>3 Columns (Default)</option>
+          <option value="2-column">2 Columns</option>
+          <option value="1-column">1 Column</option>
+        </select>
+        <small>Choose how many columns for homepage content</small>
           </div>
         </details>
         
@@ -309,9 +309,9 @@ function renderCustomizeTab(forumSlug, tab, forum) {
         
         <label style="margin-top: 15px;">Homepage Layout</label>
         <select id="customize-homepageLayout">
-          <option value="1-column" ${forum.homepageLayout === '1-column' ? 'selected' : ''}>1 Column</option>
+          <option value="3-column" ${forum.homepageLayout === '3-column' || !forum.homepageLayout ? 'selected' : ''}>3 Columns (Default)</option>
           <option value="2-column" ${forum.homepageLayout === '2-column' ? 'selected' : ''}>2 Columns</option>
-          <option value="3-column" ${forum.homepageLayout === '3-column' ? 'selected' : ''}>3 Columns</option>
+          <option value="1-column" ${forum.homepageLayout === '1-column' ? 'selected' : ''}>1 Column</option>
         </select>
         <small>Choose how many columns for homepage content</small>
         
@@ -440,16 +440,35 @@ function showAddQuickReferenceModal(forumSlug) {
 
 // Handle update forum customization
 async function handleUpdateForumCustomization(forumSlug) {
+  // Get current forum data to preserve fields not in current tab
+  let currentData = currentForumData;
+  if (!currentData) {
+    try {
+      currentData = await getForum(forumSlug);
+    } catch (e) {
+      showNotification('Error loading forum data', 'error');
+      return;
+    }
+  }
+
   // Get all values - check if elements exist (they might be in different tabs)
-  const customCSS = document.getElementById('customize-customCSS')?.value.trim() || '';
-  const bulletImageUrl = document.getElementById('customize-bulletImageUrl')?.value.trim() || '';
-  const headerImageUrl = document.getElementById('customize-headerImageUrl')?.value.trim() || '';
-  const logoImageUrl = document.getElementById('customize-logoImageUrl')?.value.trim() || '';
-  const welcomeMessage = document.getElementById('customize-welcomeMessage')?.value.trim() || '';
-  const homepageLayout = document.getElementById('customize-homepageLayout')?.value || '1-column';
+  // Preserve existing values if element doesn't exist (user is on different tab)
+  const customCSS = document.getElementById('customize-customCSS')?.value.trim() ?? (currentData.customCSS || '');
+  const bulletImageUrl = document.getElementById('customize-bulletImageUrl')?.value.trim() ?? (currentData.bulletImageUrl || '');
+  const headerImageUrl = document.getElementById('customize-headerImageUrl')?.value.trim() ?? (currentData.headerImageUrl || '');
+  const logoImageUrl = document.getElementById('customize-logoImageUrl')?.value.trim() ?? (currentData.logoImageUrl || '');
+  const welcomeMessage = document.getElementById('customize-welcomeMessage')?.value.trim() ?? (currentData.welcomeMessage || '');
+  // Default to 3-column, preserve existing if element doesn't exist
+  const homepageLayoutEl = document.getElementById('customize-homepageLayout');
+  const homepageLayout = homepageLayoutEl ? homepageLayoutEl.value : (currentData.homepageLayout || '3-column');
   const boardLimitInput = document.getElementById('customize-boardLimit');
-  // Convert empty string to null, otherwise parse as integer
-  const boardLimit = boardLimitInput && boardLimitInput.value.trim() ? parseInt(boardLimitInput.value.trim()) : null;
+  // Convert empty string to null, otherwise parse as integer, preserve existing if not set
+  let boardLimit = null;
+  if (boardLimitInput) {
+    boardLimit = boardLimitInput.value.trim() ? parseInt(boardLimitInput.value.trim()) : null;
+  } else {
+    boardLimit = currentData.boardLimit ?? null;
+  }
 
   try {
     showLoading();
