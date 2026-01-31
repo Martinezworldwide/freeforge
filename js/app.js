@@ -501,14 +501,16 @@ async function handleAddAnnouncement(forumSlug) {
       throw new Error(error.error || 'Failed to create announcement');
     }
 
+    const data = await response.json();
     showNotification('Announcement added successfully!', 'success');
+    document.querySelector('.modal').remove();
+    
     // Refresh the content tab to show new announcement
     if (currentForumData) {
       currentForumData.announcements = currentForumData.announcements || [];
-      currentForumData.announcements.push(await response.json().then(d => d.announcement));
+      currentForumData.announcements.push(data.announcement);
       renderCustomizeTab(forumSlug, 'content', currentForumData);
     } else {
-      document.querySelector('.modal').remove();
       setTimeout(() => {
         showCustomizeForumModal(forumSlug);
       }, 500);
