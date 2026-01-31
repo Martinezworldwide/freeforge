@@ -133,15 +133,15 @@ function showCreateForumModal() {
           <div style="margin-top: 10px;">
             <label>Header/Banner Image URL</label>
             <input type="url" id="forum-headerImageUrl" placeholder="https://i.pinimg.com/..." maxlength="500">
-            <small>Banner image for the top of your forum</small>
+            <small><strong>Important:</strong> Use direct image URLs (e.g., https://i.pinimg.com/...). For Pinterest: Right-click the image → "Copy image address". Do NOT use pin.it links.</small>
             
             <label style="margin-top: 15px;">Logo Image URL</label>
             <input type="url" id="forum-logoImageUrl" placeholder="https://i.pinimg.com/..." maxlength="500">
-            <small>Logo image for your forum</small>
+            <small>Use direct image URLs. For Pinterest: Right-click image → "Copy image address"</small>
             
             <label style="margin-top: 15px;">Custom Bullet Point Image URL</label>
             <input type="url" id="forum-bulletImageUrl" placeholder="https://i.pinimg.com/..." maxlength="500">
-            <small>Image URL for custom bullet points</small>
+            <small>Use direct image URLs. For Pinterest: Right-click image → "Copy image address"</small>
             
             <label style="margin-top: 15px;">Homepage Layout</label>
             <select id="forum-homepageLayout">
@@ -283,15 +283,15 @@ function renderCustomizeTab(forumSlug, tab, forum) {
       <div class="form">
         <label>Header/Banner Image URL</label>
         <input type="url" id="customize-headerImageUrl" placeholder="https://i.pinimg.com/..." value="${(forum.headerImageUrl || '').replace(/"/g, '&quot;')}" maxlength="500">
-        <small>Banner image for the top of your forum</small>
+        <small><strong>Important:</strong> Use direct image URLs (e.g., https://i.pinimg.com/...). For Pinterest: Right-click the image → "Copy image address". Do NOT use pin.it links.</small>
         
         <label style="margin-top: 15px;">Logo Image URL</label>
         <input type="url" id="customize-logoImageUrl" placeholder="https://i.pinimg.com/..." value="${(forum.logoImageUrl || '').replace(/"/g, '&quot;')}" maxlength="500">
-        <small>Logo image for your forum</small>
+        <small>Use direct image URLs. For Pinterest: Right-click image → "Copy image address"</small>
         
         <label style="margin-top: 15px;">Custom Bullet Point Image URL</label>
         <input type="url" id="customize-bulletImageUrl" placeholder="https://i.pinimg.com/..." value="${(forum.bulletImageUrl || '').replace(/"/g, '&quot;')}" maxlength="500">
-        <small>Image URL for custom bullet points</small>
+        <small>Use direct image URLs. For Pinterest: Right-click image → "Copy image address"</small>
         
         <label style="margin-top: 15px;">Homepage Layout</label>
         <select id="customize-homepageLayout">
