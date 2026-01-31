@@ -217,9 +217,33 @@ async function renderForum(params) {
             </thead>
             <tbody>
               ${boardsList.map((board, index) => {
-                const lastThread = board.lastThreadId ? (threads[board.lastThreadId] || null) : null;
-                const lastPost = lastThread && lastThread.lastPostId ? (posts[lastThread.lastPostId] || null) : null;
-                const lastPostAuthor = lastPost ? (users[lastPost.authorId] || { username: 'Unknown' }) : null;
+                // Try to find last thread/post for this board
+                let lastThread = null;
+                let lastPost = null;
+                let lastPostAuthor = null;
+                
+                if (threads && Object.keys(threads).length > 0) {
+                  // Find threads for this board
+                  const boardThreads = Object.values(threads).filter(t => t.boardId === board.id);
+                  if (boardThreads.length > 0) {
+                    // Sort by lastPostAt to get most recent
+                    boardThreads.sort((a, b) => new Date(b.lastPostAt || b.createdAt) - new Date(a.lastPostAt || a.createdAt));
+                    lastThread = boardThreads[0];
+                    
+                    if (lastThread && posts && Object.keys(posts).length > 0) {
+                      // Find last post in this thread
+                      const threadPosts = Object.values(posts).filter(p => p.threadId === lastThread.id);
+                      if (threadPosts.length > 0) {
+                        threadPosts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                        lastPost = threadPosts[0];
+                        
+                        if (lastPost && users && users[lastPost.authorId]) {
+                          lastPostAuthor = users[lastPost.authorId];
+                        }
+                      }
+                    }
+                  }
+                }
                 
                 return `
                   <tr style="border-bottom: 1px solid #dee2e6; cursor: pointer;" onclick="router.navigate('/forum/${slug}/board/${board.id}')" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='white'">
