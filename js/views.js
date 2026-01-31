@@ -157,8 +157,8 @@ async function renderForum(params) {
     let announcementsHtml = '';
     if (announcements.length > 0) {
       announcementsHtml = `
-        <div class="announcements-section" style="background: white; padding: 20px; border-radius: 5px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-          <h2 style="color: #3498db; margin-bottom: 15px;">Announcements</h2>
+        <div class="announcements-section" style="background: white; padding: 20px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+          <h2 style="color: #3498db; margin-bottom: 15px; margin-top: 0;">Announcements</h2>
           ${announcements.map(a => `
             <div style="border-left: 4px solid ${a.priority === 'urgent' ? '#e74c3c' : a.priority === 'high' ? '#f39c12' : '#3498db'}; padding-left: 15px; margin-bottom: 15px;">
               <h3 style="margin: 0 0 5px 0; color: #2c3e50;">${escapeHtml(a.title)}</h3>
@@ -173,9 +173,9 @@ async function renderForum(params) {
     let quickRefsHtml = '';
     if (quickRefs.length > 0) {
       quickRefsHtml = `
-        <div class="quick-refs-section" style="background: white; padding: 20px; border-radius: 5px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-          <h2 style="color: #3498db; margin-bottom: 15px;">Quick References</h2>
-          <ul style="list-style: none; padding: 0;">
+        <div class="quick-refs-section" style="background: white; padding: 20px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+          <h2 style="color: #3498db; margin-bottom: 15px; margin-top: 0;">Quick References</h2>
+          <ul style="list-style: none; padding: 0; margin: 0;">
             ${quickRefs.map(r => `
               <li style="margin-bottom: 10px;">
                 <a href="${escapeHtml(r.url)}" target="_blank" rel="noopener" style="color: #3498db; text-decoration: none;">${escapeHtml(r.label)}</a>
@@ -301,16 +301,16 @@ async function renderForum(params) {
         ` : ''}
 
         ${layout === '3-column' ? `
-          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 20px;">
-            <div>${announcementsHtml}</div>
-            <div>${quickRefsHtml}</div>
-            <div></div>
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 20px; align-items: start;">
+            <div style="min-height: 100px;">${announcementsHtml || '<div style="background: white; padding: 20px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); min-height: 100px;"></div>'}</div>
+            <div style="min-height: 100px;">${quickRefsHtml || '<div style="background: white; padding: 20px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); min-height: 100px;"></div>'}</div>
+            <div style="min-height: 100px;"><div style="background: white; padding: 20px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); min-height: 100px;"></div></div>
           </div>
           ${boardsHtml}
         ` : layout === '2-column' ? `
-          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-bottom: 20px;">
-            <div>${announcementsHtml}</div>
-            <div>${quickRefsHtml}</div>
+          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-bottom: 20px; align-items: start;">
+            <div style="min-height: 100px;">${announcementsHtml || '<div style="background: white; padding: 20px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); min-height: 100px;"></div>'}</div>
+            <div style="min-height: 100px;">${quickRefsHtml || '<div style="background: white; padding: 20px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); min-height: 100px;"></div>'}</div>
           </div>
           ${boardsHtml}
         ` : `
