@@ -580,14 +580,16 @@ async function handleAddQuickReference(forumSlug) {
       throw new Error(error.error || 'Failed to create quick reference');
     }
 
+    const data = await response.json();
     showNotification('Quick reference added successfully!', 'success');
+    document.querySelector('.modal').remove();
+    
     // Refresh the content tab to show new reference
     if (currentForumData) {
       currentForumData.quickReferences = currentForumData.quickReferences || [];
-      currentForumData.quickReferences.push(await response.json().then(d => d.reference));
+      currentForumData.quickReferences.push(data.reference);
       renderCustomizeTab(forumSlug, 'content', currentForumData);
     } else {
-      document.querySelector('.modal').remove();
       setTimeout(() => {
         showCustomizeForumModal(forumSlug);
       }, 500);
