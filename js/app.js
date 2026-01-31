@@ -233,6 +233,12 @@ function showCustomizeForumModal(forumSlug) {
     return;
   }
 
+  // Close any existing modal first
+  const existingModal = document.querySelector('.modal');
+  if (existingModal) {
+    existingModal.remove();
+  }
+
   // Fetch current forum data
   getForum(forumSlug).then(forum => {
     const modal = document.createElement('div');
@@ -263,14 +269,22 @@ function showCustomizeForumModal(forumSlug) {
   });
 }
 
+// Store current forum data for tab switching
+let currentForumData = null;
+
 // Show customize tab
 function showCustomizeTab(forumSlug, tab, forumData) {
-  if (!forumData) {
+  if (forumData) {
+    currentForumData = forumData;
+  }
+  
+  if (!currentForumData) {
     getForum(forumSlug).then(forum => {
+      currentForumData = forum;
       renderCustomizeTab(forumSlug, tab, forum);
     });
   } else {
-    renderCustomizeTab(forumSlug, tab, forumData);
+    renderCustomizeTab(forumSlug, tab, currentForumData);
   }
 }
 
@@ -426,6 +440,7 @@ function showAddQuickReferenceModal(forumSlug) {
 
 // Handle update forum customization
 async function handleUpdateForumCustomization(forumSlug) {
+  // Get all values - check if elements exist (they might be in different tabs)
   const customCSS = document.getElementById('customize-customCSS')?.value.trim() || '';
   const bulletImageUrl = document.getElementById('customize-bulletImageUrl')?.value.trim() || '';
   const headerImageUrl = document.getElementById('customize-headerImageUrl')?.value.trim() || '';
@@ -438,18 +453,26 @@ async function handleUpdateForumCustomization(forumSlug) {
 
   try {
     showLoading();
-    await updateForumCustomization(forumSlug, { 
+    const result = await updateForumCustomization(forumSlug, { 
       customCSS, bulletImageUrl, headerImageUrl, logoImageUrl,
       welcomeMessage, homepageLayout, boardLimit
     });
-    showNotification('Forum customization updated successfully!', 'success');
-    // Refresh the customization modal
+    
+    showNotification('Forum customization updated successfully! Refreshing page...', 'success');
+    
+    // Close the modal first
+    const modal = document.querySelector('.modal');
+    if (modal) {
+      modal.remove();
+    }
+    
+    // Reload the forum page to show changes
     setTimeout(() => {
-      showCustomizeForumModal(forumSlug);
-    }, 500);
+      router.navigate(`/forum/${forumSlug}`);
+      window.location.reload();
+    }, 1000);
   } catch (error) {
     showNotification(error.message, 'error');
-  } finally {
     hideLoading();
   }
 }
@@ -479,11 +502,17 @@ async function handleAddAnnouncement(forumSlug) {
     }
 
     showNotification('Announcement added successfully!', 'success');
-    document.querySelector('.modal').remove();
-    // Refresh customization modal
-    setTimeout(() => {
-      showCustomizeForumModal(forumSlug);
-    }, 500);
+    // Refresh the content tab to show new announcement
+    if (currentForumData) {
+      currentForumData.announcements = currentForumData.announcements || [];
+      currentForumData.announcements.push(await response.json().then(d => d.announcement));
+      renderCustomizeTab(forumSlug, 'content', currentForumData);
+    } else {
+      document.querySelector('.modal').remove();
+      setTimeout(() => {
+        showCustomizeForumModal(forumSlug);
+      }, 500);
+    }
   } catch (error) {
     showNotification(error.message, 'error');
   } finally {
@@ -510,10 +539,15 @@ async function handleDeleteAnnouncement(forumSlug, announcementId) {
     }
 
     showNotification('Announcement deleted successfully!', 'success');
-    // Refresh customization modal
-    setTimeout(() => {
-      showCustomizeForumModal(forumSlug);
-    }, 500);
+    // Refresh the content tab
+    if (currentForumData && currentForumData.announcements) {
+      currentForumData.announcements = currentForumData.announcements.filter(a => a.id !== announcementId);
+      renderCustomizeTab(forumSlug, 'content', currentForumData);
+    } else {
+      setTimeout(() => {
+        showCustomizeForumModal(forumSlug);
+      }, 500);
+    }
   } catch (error) {
     showNotification(error.message, 'error');
   } finally {
@@ -545,11 +579,17 @@ async function handleAddQuickReference(forumSlug) {
     }
 
     showNotification('Quick reference added successfully!', 'success');
-    document.querySelector('.modal').remove();
-    // Refresh customization modal
-    setTimeout(() => {
-      showCustomizeForumModal(forumSlug);
-    }, 500);
+    // Refresh the content tab to show new reference
+    if (currentForumData) {
+      currentForumData.quickReferences = currentForumData.quickReferences || [];
+      currentForumData.quickReferences.push(await response.json().then(d => d.reference));
+      renderCustomizeTab(forumSlug, 'content', currentForumData);
+    } else {
+      document.querySelector('.modal').remove();
+      setTimeout(() => {
+        showCustomizeForumModal(forumSlug);
+      }, 500);
+    }
   } catch (error) {
     showNotification(error.message, 'error');
   } finally {
@@ -576,10 +616,15 @@ async function handleDeleteQuickReference(forumSlug, referenceId) {
     }
 
     showNotification('Quick reference deleted successfully!', 'success');
-    // Refresh customization modal
-    setTimeout(() => {
-      showCustomizeForumModal(forumSlug);
-    }, 500);
+    // Refresh the content tab
+    if (currentForumData && currentForumData.quickReferences) {
+      currentForumData.quickReferences = currentForumData.quickReferences.filter(r => r.id !== referenceId);
+      renderCustomizeTab(forumSlug, 'content', currentForumData);
+    } else {
+      setTimeout(() => {
+        showCustomizeForumModal(forumSlug);
+      }, 500);
+    }
   } catch (error) {
     showNotification(error.message, 'error');
   } finally {
