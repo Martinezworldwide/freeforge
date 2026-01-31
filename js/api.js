@@ -116,15 +116,29 @@ async function deletePost(forumSlug, postId) {
 // Get forums index
 async function getForumsIndex() {
   try {
-    const response = await fetch(`${CONFIG.API_URL}/api/data/forums/index.json`);
+    console.log('Fetching forums index from:', `${CONFIG.API_URL}/api/data/forums/index.json`);
+    const response = await fetch(`${CONFIG.API_URL}/api/data/forums/index.json`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    
     if (!response.ok) {
-      throw new Error(`Failed to fetch forums index: ${response.statusText}`);
+      const errorText = await response.text();
+      console.error('Backend response error:', response.status, errorText);
+      throw new Error(`Failed to fetch forums index: ${response.status} ${response.statusText}`);
     }
+    
     const data = await response.json();
     console.log('Forums index from backend:', data);
     return data;
   } catch (error) {
     console.error('Error fetching forums index:', error);
+    // Check if it's a network error (backend might be down)
+    if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+      throw new Error('Cannot connect to backend server. Please check if the backend is running.');
+    }
     throw error;
   }
 }
